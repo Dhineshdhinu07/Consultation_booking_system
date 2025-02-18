@@ -1,16 +1,40 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
+import FloatingNav from "@/components/ui/floating-navbar";
+import { FiHome, FiUser, FiDollarSign } from "react-icons/fi";
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  weight: "100 900",
+});
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const navItems = [
+  {
+    name: "Home",
+    alternateText: "Home",
+    link: "/",
+    icon: <FiHome className="h-4 w-4" />,
+  },
+  {
+    name: "Testimonials",
+    alternateText: "Testimonials",
+    link: "/testimonials",
+    icon: <FiDollarSign className="h-4 w-4" />,
+  },
+  {
+    name: "Book Now",
+    alternateText: "Book Now",
+    link: "/book-now",
+    icon: <FiUser className="h-4 w-4" />,
+  },
+];
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -27,6 +51,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <FloatingNav navItems={navItems} />
         {children}
       </body>
     </html>
