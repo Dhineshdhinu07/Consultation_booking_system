@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Calendar } from "@/components/ui/calendar"
-
 import {
   Popover,
   PopoverContent,
@@ -26,10 +25,11 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { FileUpload } from "@/components/ui/file-upload"
+import { BackgroundBeams } from "@/components/ui/background-beams"
 
 const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
+  name: z.string().min(4, {
+    message: "Name must be at least 4 characters.",
   }),
   email: z.string().email({
     message: "Please enter a valid email address.",
@@ -37,7 +37,7 @@ const formSchema = z.object({
   date: z.date({
     required_error: "A date is required for the consultation.",
   }),
-  files: z.array(z.custom<File>()).optional(),
+  files: z.array(z.custom<File>()),
 })
 
 export default function BookingForm() {
@@ -55,8 +55,14 @@ export default function BookingForm() {
   }
 
   return (
-    <section className="bg-gray-950 w-full min-h-screen flex justify-center items-center text-white p-4">
-      <div className="w-full max-w-5xl space-y-8 rounded-xl border border-gray-800 bg-gray-900/50 p-6 backdrop-blur-sm">
+    <section className="relative bg-gray-950 w-full min-h-screen flex justify-center items-center text-white p-4">
+      {/* Background layer */}
+      <div className="absolute inset-0 z-0">
+        <BackgroundBeams />
+      </div>
+
+      {/* Content layer */}
+      <div className="relative z-10 w-full max-w-5xl space-y-8 rounded-xl border bg-gray-950/50 border-gray-800 p-6 backdrop-blur-sm">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Book Consultation</h1>
           <p className="text-gray-400">Fill in the details to schedule your consultation.</p>
@@ -74,7 +80,12 @@ export default function BookingForm() {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your Name" {...field} className="border-gray-800 bg-gray-950 h-12" />
+                        <Input 
+                          placeholder="Your Name" 
+                          {...field} 
+                          className="border-gray-800 text-white bg-transparent hover:bg-transparent hover:text-white hover:border-gray-700  h-12 [-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(0,0,0,0)] [-webkit-autofill]:text-white" 
+                          autoComplete="off"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -88,7 +99,12 @@ export default function BookingForm() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your Email" {...field} className="border-gray-800 bg-gray-950 h-12" />
+                        <Input 
+                          placeholder="Your Email" 
+                          {...field} 
+                          className="border-gray-800 text-white bg-transparent hover:bg-transparent hover:text-white hover:border-gray-700 h-12 [-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(0,0,0,0)] [-webkit-autofill]:text-white" 
+                          autoComplete="off"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -107,14 +123,14 @@ export default function BookingForm() {
                             <Button
                               variant={"outline"}
                               className={cn(
-                                "w-full h-12 pl-3 text-left font-normal border-gray-800 bg-gray-950",
+                                "w-full h-12 pl-3 text-left font-normal border-gray-800 bg-transparent hover:bg-transparent hover:text-white hover:border-gray-700",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
                               ) : (
-                                <span>Pick a date</span>
+                                <span className="text-gray-400">Pick a date</span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -163,11 +179,11 @@ export default function BookingForm() {
                 />
 
                 <div className="flex flex-col gap-4 pt-4">
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full bg-white text-black hover:text-white">
                     Book Consultation
                   </Button>
                   <Link href="/" className="w-full">
-                    <Button type="button" className="w-full">
+                    <Button type="button" className="w-full bg-white text-black hover:text-white">
                       Back to Home
                     </Button>
                   </Link>

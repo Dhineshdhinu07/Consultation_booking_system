@@ -1,7 +1,5 @@
 "use client";
 
-import { Stars } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
 import React from "react";
 import { FiArrowRight } from "react-icons/fi";
 import { PinContainer } from "@/components/ui/3d-pin";
