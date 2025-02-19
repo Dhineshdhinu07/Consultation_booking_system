@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import FloatingNav from "@/components/ui/floating-navbar";
-import { FiHome, FiUser, FiDollarSign } from "react-icons/fi";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -15,26 +13,7 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-const navItems = [
-  {
-    name: "Home",
-    alternateText: "Home",
-    link: "/",
-    icon: <FiHome className="h-4 w-4" />,
-  },
-  {
-    name: "Testimonials",
-    alternateText: "Testimonials",
-    link: "/testimonials",
-    icon: <FiDollarSign className="h-4 w-4" />,
-  },
-  {
-    name: "Book Now",
-    alternateText: "Book Now",
-    link: "/book-now",
-    icon: <FiUser className="h-4 w-4" />,
-  },
-];
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -51,7 +30,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <FloatingNav navItems={navItems} />
         {children}
       </body>
     </html>
