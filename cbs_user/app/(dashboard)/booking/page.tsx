@@ -37,7 +37,7 @@ const formSchema = z.object({
   date: z.date({
     required_error: "A date is required for the consultation.",
   }),
-  files: z.array(z.custom<File>()),
+  files: z.array(z.custom<File>()).optional().default([]),
 })
 
 export default function BookingForm() {
@@ -46,6 +46,7 @@ export default function BookingForm() {
     defaultValues: {
       name: "",
       email: "",
+      date: undefined,
       files: [],
     },
   })
@@ -84,7 +85,6 @@ export default function BookingForm() {
                           placeholder="Your Name" 
                           {...field} 
                           className="border-gray-800 text-white bg-transparent hover:bg-transparent hover:text-white hover:border-gray-700  h-12 [-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(0,0,0,0)] [-webkit-autofill]:text-white" 
-                          autoComplete="off"
                         />
                       </FormControl>
                       <FormMessage />
@@ -103,7 +103,6 @@ export default function BookingForm() {
                           placeholder="Your Email" 
                           {...field} 
                           className="border-gray-800 text-white bg-transparent hover:bg-transparent hover:text-white hover:border-gray-700 h-12 [-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(0,0,0,0)] [-webkit-autofill]:text-white" 
-                          autoComplete="off"
                         />
                       </FormControl>
                       <FormMessage />
