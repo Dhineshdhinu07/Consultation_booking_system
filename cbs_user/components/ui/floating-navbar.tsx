@@ -13,8 +13,9 @@ const FloatingNav = ({
   navItems: {
     name: string;
     alternateText?: string;
-    link: string;
+    link?: string;
     icon?: React.ReactNode;
+    onClick?: () => void;
   }[];
 }) => {
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
@@ -29,33 +30,63 @@ const FloatingNav = ({
       )}
     >
       {navItems.map((navItem, index) => (
-        <Link
-          key={`link=${index}`}
-          href={navItem.link}
-          className={cn(
-            "relative px-4 py-2 text-sm font-medium transition-colors",
-            activeIndex === index 
-              ? "text-black dark:text-black" 
-              : "text-neutral-300 hover:text-neutral-300"
-          )}
-          onMouseEnter={() => setActiveIndex(index)}
-          onMouseLeave={() => setActiveIndex(null)}
-        >
-          <span className="relative z-20">
-            <RollingText 
-              text={navItem.name} 
-              alternateText={navItem.alternateText}
-              isHovered={activeIndex === index}
-            />
-          </span>
-          {activeIndex === index && (
-            <motion.div
-              layoutId="pill"
-              className="absolute inset-0 z-10 bg-white dark:bg-white rounded-full"
-              transition={{ type: "spring", duration: 0.6 }}
-            ></motion.div>
-          )}
-        </Link>
+        navItem.link ? (
+          <Link
+            key={`link=${index}`}
+            href={navItem.link}
+            className={cn(
+              "relative px-4 py-2 text-sm font-medium transition-colors",
+              activeIndex === index 
+                ? "text-black dark:text-black" 
+                : "text-neutral-300 hover:text-neutral-300"
+            )}
+            onMouseEnter={() => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex(null)}
+          >
+            <span className="relative z-20">
+              <RollingText 
+                text={navItem.name} 
+                alternateText={navItem.alternateText}
+                isHovered={activeIndex === index}
+              />
+            </span>
+            {activeIndex === index && (
+              <motion.div
+                layoutId="pill"
+                className="absolute inset-0 z-10 bg-white dark:bg-white rounded-full"
+                transition={{ type: "spring", duration: 0.6 }}
+              ></motion.div>
+            )}
+          </Link>
+        ) : (
+          <button
+            key={`button=${index}`}
+            onClick={navItem.onClick}
+            className={cn(
+              "relative px-4 py-2 text-sm font-medium transition-colors",
+              activeIndex === index 
+                ? "text-black dark:text-black" 
+                : "text-neutral-300 hover:text-neutral-300"
+            )}
+            onMouseEnter={() => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex(null)}
+          >
+            <span className="relative z-20">
+              <RollingText 
+                text={navItem.name} 
+                alternateText={navItem.alternateText}
+                isHovered={activeIndex === index}
+              />
+            </span>
+            {activeIndex === index && (
+              <motion.div
+                layoutId="pill"
+                className="absolute inset-0 z-10 bg-white dark:bg-white rounded-full"
+                transition={{ type: "spring", duration: 0.6 }}
+              ></motion.div>
+            )}
+          </button>
+        )
       ))}
     </motion.div>
   );
