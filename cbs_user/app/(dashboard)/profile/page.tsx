@@ -272,10 +272,10 @@ const ProfilePage = () => {
                     <SelectValue placeholder="Filter Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-950 border-gray-800">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Upcoming">Upcoming</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    <SelectItem value="all" className="text-gray-400">All Status</SelectItem>
+                    <SelectItem value="Completed" className="text-gray-400">Completed</SelectItem>
+                    <SelectItem value="Upcoming" className="text-gray-400">Upcoming</SelectItem>
+                    <SelectItem value="Cancelled" className="text-gray-400">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -286,7 +286,7 @@ const ProfilePage = () => {
                       <FiFilter className="mr-2" /> Sort
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-gray-950 border-gray-800">
+                  <DropdownMenuContent className="bg-gray-950 border-gray-800 text-gray-400">
                     <DropdownMenuItem onClick={() => {
                       setSortField("date");
                       setIsAscending(true);
@@ -331,7 +331,7 @@ const ProfilePage = () => {
               <>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-800">
+                    <TableRow className="border-gray-800 hover:bg-transparent">
                       <TableHead className="text-gray-400">Date</TableHead>
                       <TableHead className="text-gray-400">Time</TableHead>
                       <TableHead className="text-gray-400">Type</TableHead>
@@ -341,7 +341,7 @@ const ProfilePage = () => {
                   </TableHeader>
                   <TableBody>
                     {paginatedBookings.map((booking) => (
-                      <TableRow key={booking.id} className="border-gray-800">
+                      <TableRow key={booking.id} className="border-gray-800 hover:bg-transparent">
                         <TableCell className="text-gray-200">{booking.date}</TableCell>
                         <TableCell className="text-gray-200">{booking.time}</TableCell>
                         <TableCell className="text-gray-200">{booking.type}</TableCell>
@@ -368,7 +368,7 @@ const ProfilePage = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="border-gray-800 hover:bg-red-500/20 hover:text-red-400"
+                                  className="bg-transparent border-gray-800 hover:bg-red-500/20 hover:text-red-400"
                                   onClick={() => handleStatusChange(booking.id, "Cancelled")}
                                 >
                                   Cancel
@@ -376,7 +376,7 @@ const ProfilePage = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-red-400 hover:bg-red-500/20 hover:text-red-400"
+                                  className="bg-transparent text-red-400 hover:bg-red-500/20 hover:text-red-400"
                                   onClick={() => handleDelete(booking.id)}
                                 >
                                   <FiTrash2 />
@@ -401,7 +401,7 @@ const ProfilePage = () => {
                       size="sm"
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className="border-gray-800"
+                      className="border-gray-800 bg-transparent text-white"
                     >
                       Previous
                     </Button>
@@ -410,7 +410,7 @@ const ProfilePage = () => {
                       size="sm"
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className="border-gray-800"
+                      className="border-gray-800 bg-transparent text-white "
                     >
                       Next
                     </Button>
