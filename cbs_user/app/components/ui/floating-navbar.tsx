@@ -8,32 +8,27 @@ interface NavItem {
   link: string;
   icon?: ReactNode;
   alternateText?: string;
-  component?: ReactNode;
-  isButton?: boolean;
-  isAuthButton?: boolean;
 }
 
 interface FloatingNavProps {
   navItems: NavItem[];
   className?: string;
+  authButton?: ReactNode;
 }
 
-const FloatingNav = ({ navItems, className }: FloatingNavProps) => {
+const FloatingNav = ({ navItems, className, authButton }: FloatingNavProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const regularNavItems = navItems.filter(item => !item.isAuthButton);
-  const authButtons = navItems.filter(item => item.isAuthButton);
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -100 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`fixed top-4 inset-x-0 max-w-fit mx-auto z-50 ${className}`}
-    >
-      <nav className="flex items-center justify-center space-x-4 bg-black border border-gray-800 px-8 py-2 rounded-full">
-        <div className="flex items-center space-x-4">
-          {regularNavItems.map((item, idx) => (
+    <div className="fixed top-4 inset-x-0 mx-auto z-50 flex justify-center items-center gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -100 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={className}
+      >
+        <nav className="flex items-center justify-center space-x-4 bg-black border border-gray-800 px-8 py-2 rounded-full">
+          {navItems.map((item, idx) => (
             <div key={item.name} className="relative group">
               <Link
                 href={item.link}
@@ -49,22 +44,19 @@ const FloatingNav = ({ navItems, className }: FloatingNavProps) => {
               )}
             </div>
           ))}
-        </div>
+        </nav>
+      </motion.div>
 
-        {authButtons.length > 0 && (
-          <>
-            <div className="h-6 w-px bg-gray-800 mx-4"></div>
-            <div className="flex items-center space-x-3">
-              {authButtons.map((item, idx) => (
-                <div key={item.name} className="relative group">
-                  {item.component}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </nav>
-    </motion.div>
+      {authButton && (
+        <motion.div
+          initial={{ opacity: 0, y: -100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          {authButton}
+        </motion.div>
+      )}
+    </div>
   );
 };
 

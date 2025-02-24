@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Link from 'next/link';
 import { BackgroundBeams } from "@/components/ui/background-beams";
+import Link from 'next/link';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -111,9 +111,9 @@ export default function Register() {
 
           <p className="text-center text-xs text-gray-500">
             By signing up you agree to our{" "}
-            <a className="text-gray-300 underline hover:no-underline" href="#">
+            <Link href="#" className="text-gray-300 underline hover:no-underline">
               Terms
-            </a>
+            </Link>
             .
           </p>
         </form>

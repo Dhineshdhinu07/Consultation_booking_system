@@ -4,11 +4,10 @@ import React from "react";
 import { FiArrowRight } from "react-icons/fi";
 import { PinContainer } from "@/components/ui/3d-pin";
 import Link from "next/link";
-import { FiHome, FiUser, FiLogIn } from "react-icons/fi";
+import { FiHome, FiUser, FiGrid } from "react-icons/fi";
 import FloatingNav from "@/components/ui/floating-navbar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import SignupDialog from "@/components/SignupDialog";
-import LoginDialog from "@/components/LoginDialog";
 
 const navItems = [
   {
@@ -27,14 +26,8 @@ const navItems = [
     name: "Dashboard",
     alternateText: "Dashboard",
     link: "/dashboard",
-    icon: <FiHome className="h-4 w-4" />,
-  },
-  {
-    name: "Login",
-    alternateText: "Login",
-    component: <LoginDialog />,
-    isAuthButton: true
-  },
+    icon: <FiGrid className="h-4 w-4" />,
+  }
 ];
 
 export default function Home() {
@@ -51,8 +44,10 @@ export default function Home() {
         }}
       />
 
-      <FloatingNav navItems={navItems} />
-        
+      <FloatingNav 
+        navItems={navItems} 
+        className="max-w-fit"
+      />
       <div className="relative z-10 flex flex-col items-center">
         <PinContainer
           title="Book Now"
