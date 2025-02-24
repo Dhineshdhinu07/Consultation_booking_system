@@ -1,15 +1,19 @@
-'use client'
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Link from 'next/link';
-import { BackgroundBeams } from "@/components/ui/background-beams";
+import { FiArrowRight } from "react-icons/fi";
 
-export default function Register() {
+interface SignupDialogProps {
+  className?: string;
+}
+
+export default function SignupDialog({ className }: SignupDialogProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,29 +32,27 @@ export default function Register() {
   };
 
   return (
-    <section className="relative grid min-h-screen place-content-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-black px-4 py-14 text-gray-200">
-      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent mix-blend-overlay backdrop-blur-[1px]" />
-      
-      <div 
-        className="absolute inset-0 opacity-20 backdrop-blur-sm"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%239C92AC' fill-opacity='0.4' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E")`,
-        }}
-      />
-
-      <div className="absolute inset-0 backdrop-blur-[2px]">
-        <BackgroundBeams />
-      </div>
-
-      <div className="relative z-50 w-full max-w-md">
-        <div className="flex flex-col items-center gap-2 mb-8 backdrop-blur-sm bg-black/20 p-4 rounded-lg">
-          <h1 className="text-2xl font-bold text-white">Sign up to CBS</h1>
-          <p className="text-gray-400 text-center">
-            We just need a few details to get you started.
-          </p>
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="group relative inline-flex h-12 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+          <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
+          <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-3 py-1 text-sm font-medium text-white backdrop-blur-3xl">
+            Sign up
+            <FiArrowRight className="ml-2 transition-transform duration-300 group-hover:-rotate-45" />
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="bg-gray-950 border border-gray-800">
+        <div className="flex flex-col items-center gap-2">
+          <DialogHeader>
+            <DialogTitle className="sm:text-center text-white">Sign up to CBS</DialogTitle>
+            <DialogDescription className="sm:text-center text-gray-400">
+              We just need a few details to get you started.
+            </DialogDescription>
+          </DialogHeader>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 bg-black/40 p-8 rounded-lg backdrop-blur-md border border-gray-800/50">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-gray-200">Full name</Label>
@@ -117,7 +119,7 @@ export default function Register() {
             .
           </p>
         </form>
-      </div>
-    </section>
+      </DialogContent>
+    </Dialog>
   );
-}
+} 

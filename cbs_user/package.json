@@ -26,6 +26,7 @@
     "@react-three/drei": "^9.121.5",
     "@react-three/fiber": "^8.17.14",
     "@tabler/icons-react": "^3.30.0",
+    "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
@@ -44,7 +45,8 @@
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.173.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.13.7",
