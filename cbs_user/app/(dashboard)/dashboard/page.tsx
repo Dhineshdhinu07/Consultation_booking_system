@@ -13,6 +13,19 @@ import { FiSearch, FiFilter, FiTrash2, FiUser, FiHome, FiLogOut, FiGrid } from "
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { useAuth } from "@/hooks/useAuth";
 import FloatingNav from "@/components/ui/floating-navbar";
+import { z } from "zod";
+
+// Zod schema for Booking
+const BookingSchema = z.object({
+  id: z.number(),
+  date: z.string(),
+  time: z.string(),
+  type: z.string(),
+  status: z.enum(["Completed", "Upcoming", "Cancelled"])
+});
+
+// Type inference from the schema
+type Booking = z.infer<typeof BookingSchema>;
 
 const navItems = [
   {
@@ -47,18 +60,10 @@ const navItems = [
   },
 ];
 
-interface Booking {
-  id: number;
-  date: string;
-  time: string;
-  type: string;
-  status: "Completed" | "Upcoming" | "Cancelled";
-}
-
 const ITEMS_PER_PAGE = 10;
 
-// Mock data for development
-const mockBookings: Booking[] = [
+// Mock data for development - validate with Zod schema
+const mockBookings = [
   {
     id: 1,
     date: "2024-03-20",
@@ -101,8 +106,10 @@ const mockBookings: Booking[] = [
     type: "Emergency",
     status: "Cancelled"
   }
+] as const;
 
-];
+// Validate mock data
+const validatedMockBookings = mockBookings.map(booking => BookingSchema.parse(booking));
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -113,14 +120,25 @@ export default function Dashboard() {
   const [sortField, setSortField] = useState<"date" | "type">("date");
   const [currentPage, setCurrentPage] = useState(1);
   const [isAscending, setIsAscending] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBookings(mockBookings);
-      setLoading(false);
+      setError(null);
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Validate data before setting state
+        const validatedBookings = validatedMockBookings;
+        setBookings(validatedBookings);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load bookings");
+        console.error("Error loading bookings:", err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchBookings();
   }, []);
@@ -184,6 +202,7 @@ export default function Dashboard() {
 
       <div className="relative z-10 container mx-auto space-y-6 px-4 py-14">
       <FloatingNav navItems={navItems} />
+        
         {/* Profile Section */}
         <Card className="bg-gray-950/50 border-gray-800 text-white backdrop-blur-sm">
           <CardHeader>
@@ -286,7 +305,18 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {error ? (
+              <div className="text-center py-8">
+                <p className="text-red-400">{error}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4 border-gray-800 bg-transparent text-white"
+                  onClick={() => window.location.reload()}
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : loading ? (
               // Skeleton loading
               Array.from({ length: 3 }).map((_, idx) => (
                 <div key={idx} className="flex items-center space-x-4 py-4">
@@ -296,6 +326,10 @@ export default function Dashboard() {
                   <Skeleton className="h-6 w-[100px]" />
                 </div>
               ))
+            ) : bookings.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">No bookings found</p>
+              </div>
             ) : (
               <>
                 <Table>
