@@ -8,6 +8,9 @@ import Link from 'next/link';
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import SuccessPage from '@/components/SuccessPage';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/auth-provider';
+import { api } from '@/lib/utils/api';
 
 type PaymentStatus = 'loading' | 'success' | 'failed';
 
@@ -18,16 +21,47 @@ interface PaymentState {
     amount: number;
     paymentId: string;
     bookedAt: string;
+    meetingLink?: string;
   };
 }
 
+interface BookingData {
+  orderId: string;
+  amount: number;
+  status: 'Confirmed';
+  meetingLink: string;
+  bookedAt: string;
+}
+
 export default function PaymentStatus() {
+  const { user } = useAuth();
   const [paymentState, setPaymentState] = useState<PaymentState>({
     status: 'loading',
     message: 'Verifying your payment...'
   });
+  const [copied, setCopied] = useState(false);
   const params = useParams();
   const router = useRouter();
+
+  const handleCopyLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast.success('Meeting link copied to clipboard!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error('Failed to copy link');
+    }
+  };
+
+  const createBooking = async (bookingData: BookingData) => {
+    try {
+      await api.post('/bookings', bookingData);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast.error('Failed to update booking status');
+    }
+  };
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -41,25 +75,40 @@ export default function PaymentStatus() {
         });
 
         if (!response.ok) {
-          throw new Error('Verification request failed');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Payment verification failed');
         }
 
         const result = await response.json();
 
         if (result.success && result.status === 'PAID') {
+          // Generate a random Zoho meeting link
+          const meetingId = Math.random().toString(36).substring(2, 10);
+          const meetingLink = `https://meet.zoho.com/j/${meetingId}`;
+          const bookedAt = new Date().toLocaleString('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          });
+          
+          // Create booking record
+          await createBooking({
+            orderId: params.orderId as string,
+            amount: result.amount || 500,
+            status: 'Confirmed',
+            meetingLink,
+            bookedAt
+          });
+          
           setPaymentState({
             status: 'success',
             message: 'Payment successful!',
             paymentDetails: {
               amount: result.amount || 500,
               paymentId: result.paymentId || params.orderId,
-              bookedAt: new Date().toLocaleString('en-IN', {
-                dateStyle: 'medium',
-                timeStyle: 'short'
-              })
+              bookedAt,
+              meetingLink
             }
           });
-          // toast.success('Payment verified successfully!');
         } else {
           setPaymentState({
             status: 'failed',
@@ -86,6 +135,8 @@ export default function PaymentStatus() {
         amount={paymentState.paymentDetails.amount}
         paymentId={paymentState.paymentDetails.paymentId}
         bookedAt={paymentState.paymentDetails.bookedAt}
+        meetingLink={paymentState.paymentDetails.meetingLink}
+        onCopyLink={handleCopyLink}
       />
     );
   }
@@ -147,8 +198,15 @@ export default function PaymentStatus() {
             </h2>
 
             {/* Status Message */}
-            <p className="text-gray-600 dark:text-gray-300">
-              {paymentState.message}
+            <p className={cn(
+              "text-sm",
+              paymentState.status === 'failed' 
+                ? "text-red-600 dark:text-red-400" 
+                : "text-gray-600 dark:text-gray-300"
+            )}>
+              {paymentState.status === 'failed' 
+                ? 'Payment verification failed. Please try again.' 
+                : paymentState.message}
             </p>
 
             {/* Action Buttons */}

@@ -42,10 +42,6 @@ const formSchema = z.object({
   }),
   phone: z.string().min(10, {
     message: "Phone number must be at least 10 digits.",
-  }).max(15, {
-    message: "Phone number must not exceed 15 digits.",
-  }).regex(/^[0-9+]+$/, {
-    message: "Please enter a valid phone number.",
   }),
 });
 
@@ -53,6 +49,7 @@ type FormValues = z.infer<typeof formSchema>
 
 // Constants
 const CONSULTATION_PRICE = 500; // Price in INR
+const TEST_PHONE = "9876543210"; // Test phone number
 const API_BASE_URL = "http://127.0.0.1:8787"; // Base URL for API calls
 
 // Add type definition for Cashfree window object
@@ -82,6 +79,23 @@ interface PaymentError {
   type?: string;
 }
 
+// Add type definition for order data
+interface OrderData {
+  order_id: string;
+  order_amount: number;
+  order_currency: string;
+  customer_details: {
+    customer_id: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+  };
+  order_meta: {
+    return_url: string;
+    notify_url: string;
+  };
+}
+
 // Validate API Response
 const isValidJsonResponse = (response: Response): Promise<boolean> => {
   const contentType = response.headers.get('content-type');
@@ -99,14 +113,13 @@ export default function BookingForm() {
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
-      phone: "",
+      phone: user?.phone || "",
     },
   });
 
   // Initialize Cashfree SDK
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Check if script is already in document
       if (!document.querySelector("script[src='https://sdk.cashfree.com/js/v3/cashfree.js']")) {
         const script = document.createElement("script");
         script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
@@ -115,12 +128,7 @@ export default function BookingForm() {
           if (window.Cashfree) {
             const cashfreeInstance = new window.Cashfree({ mode: "sandbox" });
             setCashfree(cashfreeInstance);
-          } else {
-            console.error("Cashfree SDK did not initialize properly");
           }
-        };
-        script.onerror = (error) => {
-          console.error("Error loading Cashfree SDK:", error);
         };
         document.body.appendChild(script);
       } else {
@@ -133,42 +141,34 @@ export default function BookingForm() {
   }, []);
 
   // Get session ID from backend with improved error handling
-  const getSessionId = async (orderData: any): Promise<string> => {
+  const getSessionId = async (orderData: OrderData): Promise<string> => {
     try {
       const response = await fetch(`${API_BASE_URL}/payment`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(orderData)
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create payment session');
       }
 
-      const isJson = await isValidJsonResponse(response);
-      if (!isJson) {
-        throw new Error('Server returned non-JSON response');
+      const data = await response.json();
+
+      if (!data.payment_session_id) {
+        throw new Error('No payment session ID received from server');
       }
 
-      const data: PaymentSessionResponse = await response.json();
-      console.log("Payment session response:", data);
-
-      if (data.success && data.payment_session_id) {
-        return data.payment_session_id;
-      }
-
-      throw new Error(data.message || "Failed to get payment session ID");
+      return data.payment_session_id;
     } catch (error) {
-      console.error("Error getting session id:", error);
-      if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch')) {
-          throw new Error('Unable to connect to payment server. Please check your internet connection.');
-        }
-        throw new Error(`Payment initialization failed: ${error.message}`);
-      }
-      throw new Error('An unexpected error occurred during payment initialization');
+      const errorMessage = error instanceof Error 
+        ? error.message.split('\n')[0] // Take only the first line of the error message
+        : 'Failed to initialize payment session';
+      throw new Error(errorMessage);
     }
   };
 
@@ -229,23 +229,38 @@ export default function BookingForm() {
           type: "INITIALIZATION_ERROR"
         };
         setPaymentError(error);
-        toast.error(error.message);
+        toast.error("Payment system not ready. Please try again.");
+        return;
+      }
+
+      // Validate required fields
+      if (!values.name || !values.email || !values.phone) {
+        const error = {
+          message: "Please fill in all required fields",
+          type: "VALIDATION_ERROR"
+        };
+        setPaymentError(error);
+        toast.error("Please fill in all required fields");
         return;
       }
 
       // Generate order ID
       const orderId = 'ORDER_' + Math.random().toString(36).substr(2, 9);
 
-      // Prepare order data
+      // Prepare order data with proper casing for Cashfree API
       const orderData = {
         order_id: orderId,
         order_amount: CONSULTATION_PRICE,
         order_currency: "INR",
         customer_details: {
-          customer_id: user?.id || "GUEST_" + Math.random().toString(36).substr(2, 9),
-          customer_name: values.name,
-          customer_email: values.email,
-          customer_phone: values.phone
+          customer_id: user?.id || `GUEST_${Math.random().toString(36).substr(2, 9)}`,
+          customer_name: values.name.trim(),
+          customer_email: values.email.trim().toLowerCase(),
+          customer_phone: values.phone.trim().replace(/[^0-9+]/g, '')
+        },
+        order_meta: {
+          return_url: `${window.location.origin}/payment-status/${orderId}`,
+          notify_url: `${API_BASE_URL}/webhook`
         }
       };
 
@@ -253,22 +268,25 @@ export default function BookingForm() {
       let sessionId;
       try {
         sessionId = await getSessionId(orderData);
-        console.log("Received session ID:", sessionId);
       } catch (error) {
+        const errorMessage = error instanceof Error 
+          ? error.message.split('\n')[0] // Take only the first line of the error message
+          : "Failed to initialize payment";
+        
         const paymentError = {
-          message: error instanceof Error ? error.message : "Failed to initialize payment",
+          message: errorMessage,
           type: "SESSION_ERROR"
         };
         setPaymentError(paymentError);
-        toast.error(paymentError.message);
+        toast.error("Failed to create payment session");
         return;
       }
 
-      // Initialize payment
+      // Initialize payment with proper checkout options
       try {
         const checkoutOptions = {
           paymentSessionId: sessionId,
-          returnUrl: `${window.location.origin}/payment-status/${orderId}`,
+          returnUrl: orderData.order_meta.return_url,
         };
 
         // Start checkout process
@@ -277,63 +295,34 @@ export default function BookingForm() {
         if (result.error) {
           const error = {
             code: result.error.code,
-            message: result.error.message || "Payment failed. Please try again.",
+            message: "Payment failed. Please try again.",
             type: "CHECKOUT_ERROR"
           };
           setPaymentError(error);
-          console.error("Payment error:", error);
-          toast.error(error.message);
+          toast.error("Payment failed. Please try again.");
           return;
         }
 
         if (result.success) {
-          console.log("Payment initiated successfully");
-          
-          // Verify payment status with improved error handling
-          try {
-            const verificationResult = await verifyPayment(orderId);
-            
-            if (verificationResult.success && verificationResult.status === "PAID") {
-              toast.success("Payment successful!");
-              window.location.href = "/dashboard";
-            } else {
-              const error = {
-                message: verificationResult.message || "Payment verification failed. Please try again or contact support.",
-                type: "VERIFICATION_ERROR"
-              };
-              setPaymentError(error);
-              console.error("Payment verification failed:", verificationResult);
-              toast.error(error.message);
-            }
-          } catch (verifyError) {
-            const error = {
-              message: verifyError instanceof Error ? verifyError.message : "Could not verify payment status",
-              type: "VERIFICATION_ERROR"
-            };
-            setPaymentError(error);
-            console.error("Error verifying payment:", verifyError);
-            toast.error(error.message);
-          }
+          window.location.href = orderData.order_meta.return_url;
         }
 
       } catch (error) {
         const paymentError = {
-          message: error instanceof Error ? error.message : "Failed to process payment",
+          message: "Failed to process payment. Please try again.",
           type: "INITIALIZATION_ERROR"
         };
         setPaymentError(paymentError);
-        console.error("Payment initialization error:", error);
-        toast.error(paymentError.message);
+        toast.error("Failed to process payment. Please try again.");
       }
 
     } catch (error) {
       const finalError = {
-        message: error instanceof Error ? error.message : "Payment initialization failed",
+        message: "Payment initialization failed. Please try again.",
         type: "GENERAL_ERROR"
       };
       setPaymentError(finalError);
-      console.error("Payment processing error:", error);
-      toast.error(finalError.message);
+      toast.error("Payment initialization failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -351,8 +340,10 @@ export default function BookingForm() {
         {paymentError ? (
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Payment Failed</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              {paymentError.message}
+            <p className="text-red-600 dark:text-red-400 text-sm">
+              {paymentError.message.includes('Payment session request failed:') 
+                ? 'Failed to create payment session. Please try again.' 
+                : 'Payment verification failed. Please try again.'}
             </p>
             <div className="flex flex-col gap-4">
               <Button
