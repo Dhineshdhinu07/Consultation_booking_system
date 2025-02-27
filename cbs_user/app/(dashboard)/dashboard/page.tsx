@@ -11,9 +11,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/components/ui/skeleton";
 import { FiSearch, FiFilter, FiTrash2, FiUser, FiHome, FiLogOut, FiGrid } from "react-icons/fi";
 import { BackgroundBeams } from "@/components/ui/background-beams";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/auth-provider";
 import FloatingNav from "@/components/ui/floating-navbar";
 import { z } from "zod";
+import Navbar from "@/components/Navbar";
+import Link from "next/link";
 
 // Zod schema for Booking
 const BookingSchema = z.object({
@@ -21,7 +23,8 @@ const BookingSchema = z.object({
   date: z.string(),
   time: z.string(),
   type: z.string(),
-  status: z.enum(["Completed", "Upcoming", "Cancelled"])
+  status: z.enum(["Completed", "Upcoming", "Cancelled"]),
+  link: z.string().optional()
 });
 
 // Type inference from the schema
@@ -68,42 +71,48 @@ const mockBookings = [
     date: "2024-03-20",
     time: "10:00 AM",
     type: "General Consultation",
-    status: "Upcoming"
+    status: "Upcoming",
+    link: "https://meet.zoho.com/ABC123xyz"
   },
   {
     id: 2,
     date: "2024-03-19",
     time: "2:30 PM",
     type: "Follow-up",
-    status: "Completed"
+    status: "Completed",
+    link: "https://meet.zoho.com/DEF456uvw"
   },
   {
     id: 3,
     date: "2024-03-18",
     time: "11:00 AM",
     type: "Emergency",
-    status: "Cancelled"
+    status: "Cancelled",
+    link: "https://meet.zoho.com/GHI789rst"
   },
   {
     id: 4,
     date: "2024-03-17",
     time: "9:00 AM",
     type: "Follow-up",
-    status: "Upcoming"
+    status: "Upcoming",
+    link: "https://meet.zoho.com/JKL012mno"
   },
   {
     id: 5,
     date: "2024-03-16",
     time: "10:00 AM",
     type: "General Consultation",
-    status: "Upcoming"
+    status: "Upcoming",
+    link: "https://meet.zoho.com/MNO345pqr"
   },
   {
     id: 6,
     date: "2024-03-15",
     time: "11:00 AM",
     type: "Emergency",
-    status: "Cancelled"
+    status: "Cancelled",
+    link: "https://meet.zoho.com/PQR678stu"
   }
 ] as const;
 
@@ -184,245 +193,187 @@ export default function Dashboard() {
     );
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Completed":
+        return "bg-green-100 text-green-800";
+      case "Upcoming":
+        return "bg-blue-100 text-blue-800";
+      case "Cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
-    <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-black px-4 py-8 text-gray-200">
-      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent mix-blend-overlay backdrop-blur-[1px]" />
-      
-      <div 
-        className="absolute inset-0 opacity-20 backdrop-blur-sm"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%239C92AC' fill-opacity='0.4' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E")`,
-        }}
-      />
-
-      <div className="absolute inset-0">
-        <BackgroundBeams />
-      </div>
-
-      <div className="relative z-10 container mx-auto space-y-6 px-4 py-14">
-      <FloatingNav navItems={navItems} />
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gradient-to-br from-[#F8F9FA] to-white dark:from-gray-950 dark:to-gray-900 pt-10 px-10">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-grid-[#007BFF]/5 dark:bg-grid-[#007BFF]/10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] pointer-events-none" />
         
-        {/* Profile Section */}
-        <Card className="bg-gray-950/50 border-gray-800 text-white backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-gray-800 flex items-center justify-center">
-                <FiUser className="h-8 w-8 text-gray-400" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{user?.name || 'User'}</CardTitle>
-                <CardDescription className="text-gray-400">{user?.email || 'user@example.com'}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-black/20 rounded-lg p-4 border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Total Bookings</h3>
-                <p className="text-2xl font-bold">{bookings.length}</p>
-              </div>
-              <div className="bg-black/20 rounded-lg p-4 border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Upcoming</h3>
-                <p className="text-2xl font-bold">{bookings.filter(b => b.status === "Upcoming").length}</p>
-              </div>
-              <div className="bg-black/20 rounded-lg p-4 border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Completed</h3>
-                <p className="text-2xl font-bold">{bookings.filter(b => b.status === "Completed").length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="container mx-auto px-4 relative">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#007BFF] to-[#008080] bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Manage your consultations and appointments
+            </p>
+          </div>
 
-        {/* Bookings Table Card */}
-        <Card className="bg-gray-950/50 border-gray-800 text-white backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Booking History</CardTitle>
-                <CardDescription className="text-gray-400">View all your consultation bookings</CardDescription>
-              </div>
-              <div className="flex items-center gap-4">
-                {/* Search */}
-                <div className="relative">
-                  <Input
-                    placeholder="Search bookings..."
-                    value={searchTerm}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                    className="pl-10 border-gray-800 text-white bg-transparent"
-                  />
-                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                </div>
-
-                {/* Filter */}
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px] border-gray-800 bg-transparent text-white">
-                    <SelectValue placeholder="Filter Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-950 border-gray-800">
-                    <SelectItem value="all" className="text-gray-400">All Status</SelectItem>
-                    <SelectItem value="Completed" className="text-gray-400">Completed</SelectItem>
-                    <SelectItem value="Upcoming" className="text-gray-400">Upcoming</SelectItem>
-                    <SelectItem value="Cancelled" className="text-gray-400">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Sort */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="border-gray-800 bg-transparent text-white">
-                      <FiFilter className="mr-2" /> Sort
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-gray-950 border-gray-800 text-gray-400">
-                    <DropdownMenuItem onClick={() => {
-                      setSortField("date");
-                      setIsAscending(true);
-                    }}>
-                      Date (Newest)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSortField("date");
-                      setIsAscending(false);
-                    }}>
-                      Date (Oldest)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSortField("type");
-                      setIsAscending(true);
-                    }}>
-                      Type (A-Z)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSortField("type");
-                      setIsAscending(false);
-                    }}>
-                      Type (Z-A)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+          {/* Search and Filter */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <Input
+                placeholder="Search consultations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#007BFF] focus:border-transparent dark:text-gray-100"
+              />
             </div>
-          </CardHeader>
-          <CardContent>
-            {error ? (
-              <div className="text-center py-8">
-                <p className="text-red-400">{error}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4 border-gray-800 bg-transparent text-white"
-                  onClick={() => window.location.reload()}
-                >
-                  Try Again
-                </Button>
-              </div>
-            ) : loading ? (
-              // Skeleton loading
-              Array.from({ length: 3 }).map((_, idx) => (
-                <div key={idx} className="flex items-center space-x-4 py-4">
-                  <Skeleton className="h-4 w-[100px]" />
-                  <Skeleton className="h-4 w-[80px]" />
-                  <Skeleton className="h-4 w-[150px]" />
-                  <Skeleton className="h-6 w-[100px]" />
-                </div>
-              ))
-            ) : bookings.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-400">No bookings found</p>
-              </div>
-            ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-800 hover:bg-transparent">
-                      <TableHead className="text-gray-400">Date</TableHead>
-                      <TableHead className="text-gray-400">Time</TableHead>
-                      <TableHead className="text-gray-400">Type</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-gray-400">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedBookings.map((booking: Booking) => (
-                      <TableRow key={booking.id} className="border-gray-800 hover:bg-transparent">
-                        <TableCell className="text-gray-200">{booking.date}</TableCell>
-                        <TableCell className="text-gray-200">{booking.time}</TableCell>
-                        <TableCell className="text-gray-200">{booking.type}</TableCell>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-[180px] bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+                <SelectItem value="Upcoming">Upcoming</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Bookings Table */}
+          <Card className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-gray-100 dark:border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-gray-900 dark:text-gray-100">Recent Consultations</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">View and manage your consultation history</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-200 dark:border-gray-800">
+                    <TableHead className="text-gray-600 dark:text-gray-400">Date</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Time</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Type</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Status</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Link</TableHead>
+                    <TableHead className="text-right text-gray-600 dark:text-gray-400">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    // Loading skeletons
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <TableRow key={index} className="border-gray-200 dark:border-gray-800">
+                        {Array.from({ length: 6 }).map((_, cellIndex) => (
+                          <TableCell key={cellIndex}>
+                            <Skeleton className="h-6 w-full dark:bg-gray-800" />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    paginatedBookings.map((booking) => (
+                      <TableRow key={booking.id} className="border-gray-200 dark:border-gray-800">
+                        <TableCell className="text-gray-900 dark:text-gray-100">{booking.date}</TableCell>
+                        <TableCell className="text-gray-900 dark:text-gray-100">{booking.time}</TableCell>
+                        <TableCell className="text-gray-900 dark:text-gray-100">{booking.type}</TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={
-                              booking.status === "Completed" ? "secondary" :
-                              booking.status === "Upcoming" ? "default" :
-                              "destructive"
-                            }
-                            className={
-                              booking.status === "Completed" ? "bg-green-500/20 text-green-400" :
-                              booking.status === "Upcoming" ? "bg-blue-500/20 text-blue-400" :
-                              "bg-red-500/20 text-red-400"
-                            }
-                          >
+                          <Badge className={getStatusColor(booking.status)}>
                             {booking.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            {booking.status === "Upcoming" && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-transparent border-gray-800 hover:bg-red-500/20 hover:text-red-400"
-                                  onClick={() => handleStatusChange(booking.id, "Cancelled")}
+                          {booking.status === "Upcoming" ? (
+                            <Button
+                              asChild
+                              variant="link"
+                              className="text-[#007BFF] dark:text-[#60A5FA] hover:text-[#0056b3] dark:hover:text-[#3B82F6] p-0 h-auto font-normal"
+                            >
+                              <Link 
+                                href={booking.link || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1"
+                              >
+                                Join Meeting
+                                <svg
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  xmlns="http://www.w3.org/2000/svg"
                                 >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="bg-transparent text-red-400 hover:bg-red-500/20 hover:text-red-400"
-                                  onClick={() => handleDelete(booking.id)}
-                                >
-                                  <FiTrash2 />
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                  />
+                                </svg>
+                              </Link>
+                            </Button>
+                          ) : (
+                            <span className="text-gray-500 dark:text-gray-400">
+                              {booking.status === "Completed" ? "Meeting Ended" : "Not Available"}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                                Actions
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">View Details</DropdownMenuItem>
+                              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Reschedule</DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                Cancel
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-gray-400">
-                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedBookings.length)} of {filteredAndSortedBookings.length} entries
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((prev: number) => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="border-gray-800 bg-transparent text-white"
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((prev: number) => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      className="border-gray-800 bg-transparent text-white"
-                    >
-                      Next
-                    </Button>
-                  </div>
+              {/* Pagination */}
+              <div className="flex justify-between items-center mt-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedBookings.length)} of {filteredAndSortedBookings.length} results
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="border-gray-200 dark:border-gray-700 hover:bg-[#007BFF] hover:text-white dark:text-gray-300 dark:hover:text-white"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="border-gray-200 dark:border-gray-700 hover:bg-[#007BFF] hover:text-white dark:text-gray-300 dark:hover:text-white"
+                  >
+                    Next
+                  </Button>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </section>
+    </>
   );
 } 

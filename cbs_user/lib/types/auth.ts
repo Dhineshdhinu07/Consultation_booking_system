@@ -1,15 +1,16 @@
 export interface User {
-    id?: string;
+    id: string;
     name: string;
     email: string;
-    phoneNumber?: string;
+    phone?: string;
+    role?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface AuthResponse {
-  success: boolean;
   token: string;
   user: User;
-  message?: string;
 }
 
 export interface RegisterData {
@@ -22,5 +23,7 @@ export interface RegisterData {
 export interface UpdateProfileData {
   name?: string;
   email?: string;
-  phoneNumber?: string;
+  phone?: string;
+  currentPassword?: string;
+  newPassword?: string;
 }

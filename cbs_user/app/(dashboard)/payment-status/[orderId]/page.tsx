@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
-import { BackgroundBeams } from "@/components/ui/background-beams";
 import Link from 'next/link';
-import { Loader2 } from "lucide-react";
-import SuccessPage from '@/app/components/SuccessPage';
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import SuccessPage from '@/components/SuccessPage';
+import { motion } from 'framer-motion';
 
 type PaymentStatus = 'loading' | 'success' | 'failed';
 
@@ -51,7 +51,7 @@ export default function PaymentStatus() {
             status: 'success',
             message: 'Payment successful!',
             paymentDetails: {
-              amount: result.amount || 500, // Default to 500 if not provided
+              amount: result.amount || 500,
               paymentId: result.paymentId || params.orderId,
               bookedAt: new Date().toLocaleString('en-IN', {
                 dateStyle: 'medium',
@@ -59,7 +59,7 @@ export default function PaymentStatus() {
               })
             }
           });
-          toast.success('Payment verified successfully!');
+          // toast.success('Payment verified successfully!');
         } else {
           setPaymentState({
             status: 'failed',
@@ -91,41 +91,72 @@ export default function PaymentStatus() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent mix-blend-overlay" />
-      <div className="absolute inset-0">
-        <BackgroundBeams />
-      </div>
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8F9FA] to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-grid-[#007BFF]/5 dark:bg-grid-white/5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+      
+      {/* Floating Elements */}
+      <motion.div
+        className="absolute top-1/4 left-10 w-20 h-20 bg-[#007BFF]/10 rounded-full"
+        animate={{
+          y: [0, 20, 0],
+          rotate: [0, 45, 0],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-10 w-32 h-32 bg-[#008080]/10 rounded-full"
+        animate={{
+          y: [0, -30, 0],
+          rotate: [0, -45, 0],
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-md">
-        <div className="rounded-xl border bg-gray-950/50 border-gray-800 p-8 backdrop-blur-sm space-y-6">
+      <motion.div 
+        className="relative z-10 w-full max-w-md px-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="rounded-2xl bg-white dark:bg-gray-800 p-8 shadow-lg border border-gray-100 dark:border-gray-700">
           <div className="text-center space-y-4">
+            {/* Status Icon */}
+            <div className="flex justify-center mb-6">
+              {paymentState.status === 'loading' && (
+                <Loader2 className="h-12 w-12 animate-spin text-[#007BFF] dark:text-[#008080]" />
+              )}
+              {paymentState.status === 'failed' && (
+                <XCircle className="h-12 w-12 text-red-500" />
+              )}
+            </div>
+
             {/* Status Header */}
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               {paymentState.status === 'loading' && 'Verifying Payment'}
               {paymentState.status === 'failed' && 'Payment Failed'}
             </h2>
 
             {/* Status Message */}
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-300">
               {paymentState.message}
             </p>
-
-            {/* Loading Spinner */}
-            {paymentState.status === 'loading' && (
-              <div className="flex justify-center my-6">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
-              </div>
-            )}
 
             {/* Action Buttons */}
             {paymentState.status === 'failed' && (
               <div className="flex flex-col gap-4 mt-6">
                 <Button 
                   asChild
-                  className="w-full bg-white text-black hover:text-white"
+                  className="w-full bg-[#007BFF] hover:bg-[#008080] text-white dark:bg-[#008080] dark:hover:bg-[#007BFF]"
                 >
                   <Link href="/booking">
                     Try Again
@@ -133,7 +164,7 @@ export default function PaymentStatus() {
                 </Button>
                 <Button 
                   variant="outline"
-                  className="w-full border-gray-800 text-white hover:bg-gray-800"
+                  className="w-full border-[#007BFF] text-[#007BFF] dark:border-[#008080] dark:text-[#008080] hover:bg-[#007BFF] hover:text-white dark:hover:bg-[#008080] dark:hover:text-white"
                   asChild
                 >
                   <Link href="/dashboard">
@@ -143,13 +174,13 @@ export default function PaymentStatus() {
               </div>
             )}
             {paymentState.status === 'loading' && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Please don't close this window while we verify your payment
               </p>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 } 
