@@ -363,9 +363,9 @@ export default function BookingForm() {
           </div>
         ) : (
           <>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold">Book Consultation</h1>
-              <p className="text-gray-400">Fill in the details to schedule your consultation.</p>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Book Consultation</h1>
+          <p className="text-gray-400">Fill in the details to schedule your consultation.</p>
               <p className="text-lg font-semibold mt-2">Consultation Fee: ₹{CONSULTATION_PRICE}</p>
               {!user && (
                 <p className="text-yellow-400 mt-2">
@@ -376,9 +376,9 @@ export default function BookingForm() {
                   {" "}for a better experience.
                 </p>
               )}
-            </div>
+        </div>
 
-            <Form {...form}>
+        <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
@@ -417,7 +417,7 @@ export default function BookingForm() {
                 />
 
                 <div className="flex flex-col gap-4">
-                  <Button 
+                            <Button
                     type="submit" 
                     className="w-full bg-white text-black hover:text-white"
                     disabled={isSubmitting}
@@ -429,9 +429,9 @@ export default function BookingForm() {
                       Back to Home
                     </Button>
                   </Link>
-                </div>
-              </form>
-            </Form>
+            </div>
+          </form>
+        </Form>
           </>
         )}
       </div>

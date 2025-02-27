@@ -7,6 +7,7 @@ declare module '@cashfreepayments/cashfree-js' {
   interface PaymentResult {
     error?: {
       message: string;
+      code?: string;
     };
     success?: boolean;
   }
@@ -19,14 +20,14 @@ declare module '@cashfreepayments/cashfree-js' {
     checkout: (options: CheckoutOptions) => Promise<PaymentResult>;
   }
 
-  // Add global window type
-  global {
-    interface Window {
-      Cashfree: {
-        new (config: CashfreeConfig): CashfreeInstance;
-      }
+  export function load(options?: { mode: "sandbox" | "production" }): Promise<CashfreeInstance>;
+}
+
+// Declare global Cashfree type
+declare global {
+  interface Window {
+    Cashfree: {
+      new (config: CashfreeConfig): CashfreeInstance;
     }
   }
-
-  export function load(options?: { mode: "sandbox" | "production" }): Promise<CashfreeInstance>;
 } 

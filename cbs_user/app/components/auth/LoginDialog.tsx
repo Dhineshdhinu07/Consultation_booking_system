@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { FiArrowRight } from "react-icons/fi";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface LoginDialogProps {
   className?: string;
@@ -17,16 +19,23 @@ export default function LoginDialog({ className }: LoginDialogProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
       await login(email, password);
-      router.push('/dashboard');
+      toast.success('Login successful!');
+      // Don't reset loading state as we're redirecting
     } catch (error) {
-      setError('Invalid credentials');
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      toast.error(errorMessage);
+      setIsLoading(false);
     }
   };
 
@@ -81,8 +90,19 @@ export default function LoginDialog({ className }: LoginDialogProps) {
           
           {error && <div className="text-red-500 text-center">{error}</div>}
           
-          <Button type="submit" className="w-full bg-white text-gray-900 hover:bg-black hover:text-white">
-            Login
+          <Button 
+            type="submit" 
+            className="w-full bg-white text-gray-900 hover:bg-black hover:text-white"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Logging in...</span>
+              </div>
+            ) : (
+              'Login'
+            )}
           </Button>
 
           <div className="flex items-center gap-3 before:h-px before:flex-1 before:bg-gray-800 after:h-px after:flex-1 after:bg-gray-800">

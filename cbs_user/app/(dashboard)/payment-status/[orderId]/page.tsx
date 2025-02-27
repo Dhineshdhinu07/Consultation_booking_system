@@ -7,12 +7,18 @@ import { Button } from "@/components/ui/button";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import Link from 'next/link';
 import { Loader2 } from "lucide-react";
+import SuccessPage from '@/app/components/SuccessPage';
 
 type PaymentStatus = 'loading' | 'success' | 'failed';
 
 interface PaymentState {
   status: PaymentStatus;
   message: string;
+  paymentDetails?: {
+    amount: number;
+    paymentId: string;
+    bookedAt: string;
+  };
 }
 
 export default function PaymentStatus() {
@@ -43,10 +49,17 @@ export default function PaymentStatus() {
         if (result.success && result.status === 'PAID') {
           setPaymentState({
             status: 'success',
-            message: 'Payment successful! Redirecting to dashboard...'
+            message: 'Payment successful!',
+            paymentDetails: {
+              amount: result.amount || 500, // Default to 500 if not provided
+              paymentId: result.paymentId || params.orderId,
+              bookedAt: new Date().toLocaleString('en-IN', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+              })
+            }
           });
           toast.success('Payment verified successfully!');
-          setTimeout(() => router.push('/dashboard'), 2000);
         } else {
           setPaymentState({
             status: 'failed',
@@ -67,6 +80,16 @@ export default function PaymentStatus() {
     verifyPayment();
   }, [params.orderId, router]);
 
+  if (paymentState.status === 'success' && paymentState.paymentDetails) {
+    return (
+      <SuccessPage
+        amount={paymentState.paymentDetails.amount}
+        paymentId={paymentState.paymentDetails.paymentId}
+        bookedAt={paymentState.paymentDetails.bookedAt}
+      />
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-gray-950 flex items-center justify-center p-4">
       {/* Background Effects */}
@@ -82,7 +105,6 @@ export default function PaymentStatus() {
             {/* Status Header */}
             <h2 className="text-2xl font-bold text-white">
               {paymentState.status === 'loading' && 'Verifying Payment'}
-              {paymentState.status === 'success' && 'Payment Successful'}
               {paymentState.status === 'failed' && 'Payment Failed'}
             </h2>
 
@@ -99,32 +121,32 @@ export default function PaymentStatus() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-4 mt-6">
-              {paymentState.status === 'failed' && (
-                <>
+            {paymentState.status === 'failed' && (
+              <div className="flex flex-col gap-4 mt-6">
+                <Button 
+                  asChild
+                  className="w-full bg-white text-black hover:text-white"
+                >
                   <Link href="/booking">
-                    <Button 
-                      className="w-full bg-white text-black hover:text-white"
-                    >
-                      Try Again
-                    </Button>
+                    Try Again
                   </Link>
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full border-gray-800 text-white hover:bg-gray-800"
+                  asChild
+                >
                   <Link href="/dashboard">
-                    <Button 
-                      variant="outline"
-                      className="w-full border-gray-800 text-white hover:bg-gray-800"
-                    >
-                      Go to Dashboard
-                    </Button>
+                    Go to Dashboard
                   </Link>
-                </>
-              )}
-              {paymentState.status === 'loading' && (
-                <p className="text-sm text-gray-500">
-                  Please don't close this window while we verify your payment
-                </p>
-              )}
-            </div>
+                </Button>
+              </div>
+            )}
+            {paymentState.status === 'loading' && (
+              <p className="text-sm text-gray-500">
+                Please don't close this window while we verify your payment
+              </p>
+            )}
           </div>
         </div>
       </div>

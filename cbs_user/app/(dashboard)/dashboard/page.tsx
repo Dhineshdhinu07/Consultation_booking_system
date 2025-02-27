@@ -55,7 +55,6 @@ const navItems = [
   {
     name: "Logout",
     alternateText: "Logout",
-    link: "/",
     icon: <FiLogOut className="h-4 w-4" />,
   },
 ];

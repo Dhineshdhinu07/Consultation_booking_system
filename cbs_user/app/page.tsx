@@ -59,7 +59,7 @@ export default function Home() {
           </h1>
         </PinContainer>
 
-        <div className="flex items-center gap-4 mt-16">
+        <div className="flex items-center gap-4 mt-20">
           <SignupDialog />
 
           <button className="group relative inline-flex h-12 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
