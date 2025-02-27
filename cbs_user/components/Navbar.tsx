@@ -33,15 +33,21 @@ export default function Navbar() {
     }
   };
 
-  const navItems: NavItem[] = [
+  // Public navigation items
+  const publicNavItems: NavItem[] = [
     { label: 'Home', href: '/', isScroll: false },
     { label: 'Services', id: 'features', isScroll: true },
     { label: 'Contact', id: 'contact', isScroll: true },
-    ...(user ? [
-      { label: 'Dashboard', href: '/dashboard', isScroll: false },
-      { label: 'Profile', href: '/profile', isScroll: false }
-    ] : [])
   ];
+
+  // Protected navigation items (only shown when logged in)
+  const protectedNavItems: NavItem[] = [
+    { label: 'Dashboard', href: '/dashboard', isScroll: false },
+    { label: 'Profile', href: '/profile', isScroll: false },
+  ];
+
+  // Combine nav items based on auth state
+  const navItems = [...publicNavItems, ...(user ? protectedNavItems : [])];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">

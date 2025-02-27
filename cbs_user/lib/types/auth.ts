@@ -1,11 +1,13 @@
+export type UserRole = 'user' | 'admin';
+
 export interface User {
     id: string;
     name: string;
     email: string;
+    role: UserRole;
     phone?: string;
-    role?: string;
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface AuthResponse {
@@ -17,7 +19,7 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  phoneNumber?: string;
+  phone?: string;
 }
 
 export interface UpdateProfileData {
@@ -26,4 +28,9 @@ export interface UpdateProfileData {
   phone?: string;
   currentPassword?: string;
   newPassword?: string;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
 }

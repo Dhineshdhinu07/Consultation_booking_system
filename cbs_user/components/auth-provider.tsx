@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService from '@/lib/services/auth.service';
-import type { User, RegisterData } from '@/lib/types/auth';
+import type { User, RegisterData, LoginData } from '@/lib/types/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -37,7 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const result = await AuthService.login(email, password);
+      const loginData: LoginData = { email, password };
+      const result = await AuthService.login(loginData);
+      
       if (result.user && result.token) {
         setUser(result.user);
         setIsAuthenticated(true);

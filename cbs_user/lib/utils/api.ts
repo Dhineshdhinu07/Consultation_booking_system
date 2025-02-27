@@ -1,130 +1,143 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8787';
+'use client';
+
+import AuthService from '@/lib/services/auth.service';
 
 export interface ApiError extends Error {
-  isValidationError?: boolean;
-  errors?: { message: string }[];
-  status?: number;
+  status: number;
+  data?: any;
 }
 
+const DEFAULT_TIMEOUT = 15000; // 15 seconds
+
 class Api {
-  private static getHeaders(): HeadersInit {
+  private static baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+  private static async getHeaders(): Promise<HeadersInit> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
 
-    // Add auth token if available
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+    const token = AuthService.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
   }
 
   private static async handleResponse<T>(response: Response): Promise<T> {
-    const contentType = response.headers.get('content-type');
-    const isJson = contentType && contentType.includes('application/json');
-    
+    if (!response.ok) {
+      const error = new Error(response.statusText) as ApiError;
+      error.status = response.status;
+      try {
+        error.data = await response.json();
+      } catch {
+        error.data = { message: response.statusText };
+      }
+
+      // Handle specific error cases
+      switch (response.status) {
+        case 401:
+          AuthService.logout();
+          error.message = 'Your session has expired. Please log in again.';
+          break;
+        case 403:
+          error.message = 'You do not have permission to perform this action';
+          break;
+        case 404:
+          error.message = 'The requested resource was not found';
+          break;
+        case 422:
+          error.message = error.data?.message || 'Validation failed';
+          break;
+        case 429:
+          error.message = 'Too many requests. Please try again later';
+          break;
+        default:
+          error.message = error.data?.message || 'An unexpected error occurred';
+      }
+
+      throw error;
+    }
+
     try {
-      let data;
-      if (isJson) {
-        data = await response.json();
-      } else {
-        const textData = await response.text();
-        try {
-          // Try to parse as JSON even if content-type is not set correctly
-          data = JSON.parse(textData);
-        } catch {
-          data = textData;
-        }
-      }
-
-      console.log('API Response:', {
-        url: response.url,
-        status: response.status,
-        contentType,
-        data: typeof data === 'object' ? data : { message: data }
-      });
-
-      if (!response.ok) {
-        const error = new Error(
-          typeof data === 'object' && data.message 
-            ? data.message 
-            : typeof data === 'string' 
-              ? data 
-              : `API request failed with status ${response.status}`
-        ) as ApiError;
-        
-        error.status = response.status;
-        if (response.status === 422) {
-          error.isValidationError = true;
-          error.errors = data.errors;
-        }
-
-        throw error;
-      }
-
-      return data;
+      return await response.json();
     } catch (error) {
-      console.error('API Response handling error:', {
-        url: response.url,
-        status: response.status,
-        contentType,
-        error: error instanceof Error ? {
-          message: error.message,
-          stack: error.stack
-        } : error
+      throw new Error('Invalid JSON response from server');
+    }
+  }
+
+  private static async fetchWithTimeout(
+    input: RequestInfo,
+    init?: RequestInit & { timeout?: number }
+  ): Promise<Response> {
+    const { timeout = DEFAULT_TIMEOUT, ...options } = init || {};
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(input, {
+        ...options,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
       throw error;
     }
   }
 
-  static async get<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  static async get<T>(endpoint: string, options?: { timeout?: number }): Promise<T> {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
       method: 'GET',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
+      credentials: 'include',
+      timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);
   }
 
-  static async post<T>(endpoint: string, data?: any): Promise<T> {
-    console.log('Making API POST request:', {
-      url: `${API_BASE_URL}${endpoint}`,
-      data: data ? { ...data, password: data.password ? '[REDACTED]' : undefined } : undefined
+  static async post<T>(
+    endpoint: string,
+    data?: any,
+    options?: { timeout?: number }
+  ): Promise<T> {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: await this.getHeaders(),
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
+      timeout: options?.timeout,
     });
-
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: data ? JSON.stringify(data) : undefined,
-      });
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      console.error('API POST request failed:', {
-        url: `${API_BASE_URL}${endpoint}`,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    return this.handleResponse<T>(response);
   }
 
-  static async patch<T>(endpoint: string, data: any): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  static async patch<T>(
+    endpoint: string,
+    data: any,
+    options?: { timeout?: number }
+  ): Promise<T> {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
       method: 'PATCH',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       body: JSON.stringify(data),
+      credentials: 'include',
+      timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);
   }
 
-  static async delete<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  static async delete<T>(endpoint: string, options?: { timeout?: number }): Promise<T> {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
+      credentials: 'include',
+      timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);
   }

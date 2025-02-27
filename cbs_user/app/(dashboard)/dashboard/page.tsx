@@ -209,7 +209,7 @@ export default function Dashboard() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-[#F8F9FA] to-white dark:from-gray-950 dark:to-gray-900 pt-10 px-10">
+      <div className="min-h-screen bg-gradient-to-br from-[#F8F9FA] to-white dark:from-gray-950 dark:to-gray-900 pt-20 px-10">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-grid-[#007BFF]/5 dark:bg-grid-[#007BFF]/10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] pointer-events-none" />
         
