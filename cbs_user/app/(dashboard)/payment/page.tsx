@@ -143,7 +143,7 @@ export default function BookingForm() {
   // Get session ID from backend with improved error handling
   const getSessionId = async (orderData: OrderData): Promise<string> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/payment`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

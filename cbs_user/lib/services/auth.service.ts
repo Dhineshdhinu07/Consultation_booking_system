@@ -9,7 +9,7 @@ class AuthService {
 
   static async login(data: LoginData): Promise<AuthResponse> {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', data);
+      const response = await api.post<AuthResponse>('/api/auth/login', data);
 
       if (!response || !response.user) {
         throw new Error('Invalid login response from server');
@@ -25,6 +25,7 @@ class AuthService {
       
       return response;
     } catch (error) {
+      console.error('Login error:', error);
       throw error;
     }
   }
@@ -35,7 +36,7 @@ class AuthService {
         throw new Error('Name, email, and password are required');
       }
 
-      const response = await api.post<AuthResponse>('/auth/register', registerData);
+      const response = await api.post<AuthResponse>('/api/auth/register', registerData);
       
       if (!response || !response.user) {
         throw new Error('Invalid registration response from server');
@@ -51,6 +52,7 @@ class AuthService {
       
       return response;
     } catch (error) {
+      console.error('Registration error:', error);
       throw error;
     }
   }
@@ -63,37 +65,34 @@ class AuthService {
       // Log authentication state
       console.log('Auth State:', {
         cachedUser: cachedUser ? { ...cachedUser, password: undefined } : null,
+        token: api.getToken()
       });
 
-      // If no cached user, fetch from API
-      if (!cachedUser) {
-        console.log('No cached user, fetching from API...');
-        const response = await api.get<{ user: User }>('/user/profile');
-        
-        if (response.user) {
-          console.log('User fetched from API:', { ...response.user, password: undefined });
-          this.setUser(response.user);
-          return response.user;
-        }
+      // If no cached user or no token, return null
+      if (!cachedUser || !api.getToken()) {
+        console.log('No cached user or token, returning null');
         return null;
       }
 
       // Validate cached user with API
       try {
-        const response = await api.get<{ user: User }>('/user/profile');
-        if (response.user) {
+        const response = await api.get<{ success: boolean; user: User }>('/api/auth/me');
+        console.log('User validation response:', response);
+        
+        if (response.success && response.user) {
+          console.log('User validated successfully:', { ...response.user, password: undefined });
           this.setUser(response.user);
           return response.user;
         }
+        
+        throw new Error('Invalid user response from server');
       } catch (error) {
-        console.error('Failed to validate cached user:', error);
+        console.error('Failed to validate user:', error);
         // Clear invalid cached user
         this.clearUser();
         api.clearToken();
         return null;
       }
-
-      return cachedUser;
     } catch (error) {
       console.error('getCurrentUser error:', error);
       if (error instanceof Error && (error as ApiError).status === 401) {
@@ -106,13 +105,14 @@ class AuthService {
 
   static async updateProfile(data: UpdateProfileData): Promise<User> {
     try {
-      const response = await api.patch<{ user: User }>('/user/profile', data);
-      if (response.user) {
+      const response = await api.patch<{ success: boolean; user: User }>('/api/auth/profile', data);
+      if (response.success && response.user) {
         this.setUser(response.user);
         return response.user;
       }
       throw new Error('Invalid update response from server');
     } catch (error) {
+      console.error('Update profile error:', error);
       throw error;
     }
   }
@@ -138,7 +138,9 @@ class AuthService {
   }
 
   static isAuthenticated(): boolean {
-    return !!this.getUser();
+    const hasUser = !!this.getUser();
+    const hasToken = !!api.getToken();
+    return hasUser && hasToken;
   }
 
   static hasRole(role: string): boolean {
@@ -155,7 +157,7 @@ class AuthService {
       api.clearToken();
       
       // Then make the logout request
-      await api.post('/auth/logout');
+      await api.post('/api/auth/logout');
     } catch (error) {
       console.error('Logout request failed:', error);
       // Still clear the user data and token even if the request fails

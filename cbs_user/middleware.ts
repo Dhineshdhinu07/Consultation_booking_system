@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   // Function to verify admin role
   const verifyAdminRole = async (token: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

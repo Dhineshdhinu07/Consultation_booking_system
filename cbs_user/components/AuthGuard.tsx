@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
@@ -10,7 +10,7 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth/login"); // Redirect to login if not authenticated
+      router.push("/login"); // Redirect to login if not authenticated
     }
   }, [user, router]);
 

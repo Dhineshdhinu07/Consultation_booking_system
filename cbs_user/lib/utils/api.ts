@@ -9,16 +9,21 @@ export interface ApiError extends Error {
 
 class Api {
   private static baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8787';
-  private static token: string | null = null;
+  private static TOKEN_KEY = 'auth_token';
 
-  static setToken(token: string) {
-    if (typeof window !== 'undefined') {
-      this.token = token;
-    }
+  static setToken(token: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(this.TOKEN_KEY, token);
   }
 
-  static clearToken() {
-    this.token = null;
+  static getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  static clearToken(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(this.TOKEN_KEY);
   }
 
   private static async getHeaders(): Promise<HeadersInit> {
@@ -28,8 +33,9 @@ class Api {
     };
 
     // Add token to Authorization header if available
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    const token = this.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
