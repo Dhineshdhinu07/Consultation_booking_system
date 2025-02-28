@@ -530,33 +530,33 @@ export default function Dashboard() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-[#F8F9FA] to-white dark:from-gray-950 dark:to-gray-900 pt-20 px-10">
+      <div className="min-h-screen bg-gradient-to-br from-[#F8F9FA] to-white dark:from-gray-950 dark:to-gray-900 pt-24 px-4 md:px-8">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-grid-[#007BFF]/5 dark:bg-grid-[#007BFF]/10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] pointer-events-none" />
         
-        <div className="container mx-auto px-4 relative">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#007BFF] to-[#008080] bg-clip-text text-transparent">
+        <div className="max-w-7xl mx-auto relative">
+          <div className="mb-10">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-[#007BFF] to-[#008080] bg-clip-text text-transparent">
               Dashboard
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
               Manage your consultations and appointments
             </p>
           </div>
 
           {/* Search and Filter */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-1">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
               <Input
                 placeholder="Search consultations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#007BFF] focus:border-transparent dark:text-gray-100"
+                className="pl-12 py-6 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#007BFF] focus:border-transparent dark:text-gray-100 text-base rounded-xl"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px] bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="w-full md:w-[200px] bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 py-6 rounded-xl">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -569,146 +569,151 @@ export default function Dashboard() {
           </div>
 
           {/* Bookings Table */}
-          <Card className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-gray-100 dark:border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-gray-900 dark:text-gray-100">Recent Consultations</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">View and manage your consultation history</CardDescription>
+          <Card className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl border border-gray-100 dark:border-gray-800 shadow-lg rounded-2xl overflow-hidden">
+            <CardHeader className="px-6 py-8 border-b border-gray-100 dark:border-gray-800">
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">Recent Consultations</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400 text-base mt-2">View and manage your consultation history</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gray-200 dark:border-gray-800">
-                    {user?.role === 'admin' && (
-                      <TableHead className="text-gray-600 dark:text-gray-400">User</TableHead>
-                    )}
-                    <TableHead className="text-gray-600 dark:text-gray-400">Service</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Meeting Time</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Payment Status</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Status</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={user?.role === 'admin' ? 7 : 6} className="text-center">
-                        <p className="text-gray-600 dark:text-gray-400">No bookings found.</p>
-                      </TableCell>
+            <CardContent className="p-6">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-200 dark:border-gray-800">
+                      {user?.role === 'admin' && (
+                        <TableHead className="text-gray-600 dark:text-gray-400 font-semibold py-4">User</TableHead>
+                      )}
+                      <TableHead className="text-gray-600 dark:text-gray-400 font-semibold py-4">Service</TableHead>
+                      <TableHead className="text-gray-600 dark:text-gray-400 font-semibold py-4">Meeting Time</TableHead>
+                      <TableHead className="text-gray-600 dark:text-gray-400 font-semibold py-4">Payment Status</TableHead>
+                      <TableHead className="text-gray-600 dark:text-gray-400 font-semibold py-4">Status</TableHead>
+                      <TableHead className="text-gray-600 dark:text-gray-400 font-semibold py-4 text-right">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    paginatedBookings.map((booking) => (
-                      <motion.tr
-                        key={booking.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50"
-                      >
-                        {user?.role === 'admin' && (
-                          <TableCell className="py-3 px-4">
+                  </TableHeader>
+                  <TableBody>
+                    {bookings.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={user?.role === 'admin' ? 7 : 6} className="text-center py-8">
+                          <div className="flex flex-col items-center justify-center space-y-3">
+                            <AlertCircle className="h-8 w-8 text-gray-400" />
+                            <p className="text-gray-600 dark:text-gray-400 text-lg">No bookings found.</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedBookings.map((booking) => (
+                        <motion.tr
+                          key={booking.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors"
+                        >
+                          {user?.role === 'admin' && (
+                            <TableCell className="py-4 px-6">
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">{booking.user?.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{booking.user?.email}</p>
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell className="py-4 px-6">
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-white">{booking.user?.name}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{booking.user?.email}</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{booking.serviceType}</p>
+                              <p className="text-sm text-gray-500 mt-1">{booking.currency} {booking.amount}</p>
                             </div>
                           </TableCell>
-                        )}
-                        <TableCell className="py-3 px-4">
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{booking.serviceType}</p>
-                            <p className="text-sm text-gray-500">{booking.currency} {booking.amount}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 px-4">
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {new Date(booking.date).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-500">{booking.time}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.paymentStatus)}`}>
-                            {booking.paymentStatus}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                            {booking.status}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-3 px-4">
-                          <div className="flex items-center gap-2 justify-end">
-                            {booking.meetlink && booking.paymentStatus.toLowerCase() === 'success' && (
+                          <TableCell className="py-4 px-6">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {new Date(booking.date).toLocaleDateString()}
+                              </p>
+                              <p className="text-sm text-gray-500 mt-1">{booking.time}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.paymentStatus)}`}>
+                              {booking.paymentStatus}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.status)}`}>
+                              {booking.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-4 px-6">
+                            <div className="flex items-center gap-2 justify-end">
+                              {booking.meetlink && booking.paymentStatus.toLowerCase() === 'success' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                                  onClick={() => window.open(booking.meetlink!, '_blank')}
+                                >
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  Join Meeting
+                                </Button>
+                              )}
+                              {booking.paymentStatus.toLowerCase() === 'pending' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg"
+                                  onClick={() => handlePaymentCompletion(booking)}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                  Complete Payment
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                onClick={() => window.open(booking.meetlink!, '_blank')}
+                                onClick={() => setDialogState({
+                                  isOpen: true,
+                                  type: 'edit',
+                                  bookingId: booking.id,
+                                  currentData: {
+                                    serviceType: booking.serviceType,
+                                    date: booking.date,
+                                    time: booking.time
+                                  }
+                                })}
+                                className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg p-2"
                               >
-                                <ExternalLink className="h-4 w-4 mr-1" />
-                                Join Meeting
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            )}
-                            {booking.paymentStatus.toLowerCase() === 'pending' && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-                                onClick={() => handlePaymentCompletion(booking)}
-                                disabled={isLoading}
+                                variant="destructive"
+                                onClick={() => setDialogState({
+                                  isOpen: true,
+                                  type: 'delete',
+                                  bookingId: booking.id
+                                })}
+                                className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 rounded-lg p-2"
+                                disabled={booking.paymentStatus.toLowerCase() === 'success'}
                               >
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                Complete Payment
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setDialogState({
-                                isOpen: true,
-                                type: 'edit',
-                                bookingId: booking.id,
-                                currentData: {
-                                  serviceType: booking.serviceType,
-                                  date: booking.date,
-                                  time: booking.time
-                                }
-                              })}
-                              className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => setDialogState({
-                                isOpen: true,
-                                type: 'delete',
-                                bookingId: booking.id
-                              })}
-                              className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
-                              disabled={booking.paymentStatus.toLowerCase() === 'success'}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </motion.tr>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                            </div>
+                          </TableCell>
+                        </motion.tr>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
-              <div className="flex justify-between items-center mt-4">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6 px-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Showing {currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredBookings.length)} of {filteredBookings.length} results
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button
                     variant="outline"
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="border-gray-200 dark:border-gray-700 hover:bg-[#007BFF] hover:text-white dark:text-gray-300 dark:hover:text-white"
+                    className="border-gray-200 dark:border-gray-700 hover:bg-[#007BFF] hover:text-white dark:text-gray-300 dark:hover:text-white rounded-lg px-4"
                   >
                     Previous
                   </Button>
@@ -716,7 +721,7 @@ export default function Dashboard() {
                     variant="outline"
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="border-gray-200 dark:border-gray-700 hover:bg-[#007BFF] hover:text-white dark:text-gray-300 dark:hover:text-white"
+                    className="border-gray-200 dark:border-gray-700 hover:bg-[#007BFF] hover:text-white dark:text-gray-300 dark:hover:text-white rounded-lg px-4"
                   >
                     Next
                   </Button>
