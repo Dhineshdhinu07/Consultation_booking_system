@@ -5,23 +5,26 @@ import { api } from '@/lib/utils/api';
 import type { ApiError } from '@/lib/utils/api';
 
 class AuthService {
-  private static TOKEN_KEY = 'auth_token';
   private static USER_KEY = 'user_data';
 
   static async login(data: LoginData): Promise<AuthResponse> {
     try {
       const response = await api.post<AuthResponse>('/auth/login', data);
 
-      if (!response || !response.token || !response.user) {
+      if (!response || !response.user) {
         throw new Error('Invalid login response from server');
       }
 
-      // Store user data in memory and sessionStorage for persistence across tabs
+      // Store user data in localStorage for persistence
       this.setUser(response.user);
+
+      // Set token if provided in response
+      if (response.token) {
+        api.setToken(response.token);
+      }
       
       return response;
     } catch (error) {
-      this.logout();
       throw error;
     }
   }
@@ -34,40 +37,68 @@ class AuthService {
 
       const response = await api.post<AuthResponse>('/auth/register', registerData);
       
-      if (!response || !response.token || !response.user) {
+      if (!response || !response.user) {
         throw new Error('Invalid registration response from server');
       }
 
-      // Store user data in memory and sessionStorage for persistence across tabs
+      // Store user data in localStorage for persistence
       this.setUser(response.user);
+
+      // Set token if provided in response
+      if (response.token) {
+        api.setToken(response.token);
+      }
       
       return response;
     } catch (error) {
-      this.logout();
       throw error;
     }
   }
 
   static async getCurrentUser(): Promise<User | null> {
     try {
-      // First try to get from memory/session
+      // First try to get from localStorage
       const cachedUser = this.getUser();
-      if (cachedUser) {
-        return cachedUser;
+      
+      // Log authentication state
+      console.log('Auth State:', {
+        cachedUser: cachedUser ? { ...cachedUser, password: undefined } : null,
+      });
+
+      // If no cached user, fetch from API
+      if (!cachedUser) {
+        console.log('No cached user, fetching from API...');
+        const response = await api.get<{ user: User }>('/user/profile');
+        
+        if (response.user) {
+          console.log('User fetched from API:', { ...response.user, password: undefined });
+          this.setUser(response.user);
+          return response.user;
+        }
+        return null;
       }
 
-      // If no cached user but we have a token, fetch from API
-      const data = await api.get<{ success: boolean; user: User }>('/user/profile');
-      
-      if (data.user) {
-        this.setUser(data.user);
-        return data.user;
+      // Validate cached user with API
+      try {
+        const response = await api.get<{ user: User }>('/user/profile');
+        if (response.user) {
+          this.setUser(response.user);
+          return response.user;
+        }
+      } catch (error) {
+        console.error('Failed to validate cached user:', error);
+        // Clear invalid cached user
+        this.clearUser();
+        api.clearToken();
+        return null;
       }
-      
-      return null;
+
+      return cachedUser;
     } catch (error) {
+      console.error('getCurrentUser error:', error);
       if (error instanceof Error && (error as ApiError).status === 401) {
-        this.logout();
+        this.clearUser();
+        api.clearToken();
       }
       return null;
     }
@@ -86,16 +117,10 @@ class AuthService {
     }
   }
 
-  static getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    // Token is handled by httpOnly cookies automatically
-    return null;
-  }
-
   private static getUser(): User | null {
     if (typeof window === 'undefined') return null;
     try {
-      const userStr = sessionStorage.getItem(this.USER_KEY);
+      const userStr = localStorage.getItem(this.USER_KEY);
       return userStr ? JSON.parse(userStr) : null;
     } catch {
       return null;
@@ -104,7 +129,12 @@ class AuthService {
 
   private static setUser(user: User): void {
     if (typeof window === 'undefined') return;
-    sessionStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  private static clearUser(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(this.USER_KEY);
   }
 
   static isAuthenticated(): boolean {
@@ -116,13 +146,22 @@ class AuthService {
     return user?.role === role;
   }
 
-  static logout(): void {
+  static async logout(): Promise<void> {
     if (typeof window === 'undefined') return;
-    sessionStorage.removeItem(this.USER_KEY);
-    // Clear the httpOnly cookie by making a logout request
-    api.post('/auth/logout').catch(() => {
-      // Ignore errors during logout
-    });
+    
+    try {
+      // Clear user data and token first
+      this.clearUser();
+      api.clearToken();
+      
+      // Then make the logout request
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout request failed:', error);
+      // Still clear the user data and token even if the request fails
+      this.clearUser();
+      api.clearToken();
+    }
   }
 }
 

@@ -1,16 +1,25 @@
 'use client';
 
-import AuthService from '@/lib/services/auth.service';
+const DEFAULT_TIMEOUT = 15000; // 15 seconds
 
 export interface ApiError extends Error {
   status: number;
   data?: any;
 }
 
-const DEFAULT_TIMEOUT = 15000; // 15 seconds
-
 class Api {
-  private static baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  private static baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8787';
+  private static token: string | null = null;
+
+  static setToken(token: string) {
+    if (typeof window !== 'undefined') {
+      this.token = token;
+    }
+  }
+
+  static clearToken() {
+    this.token = null;
+  }
 
   private static async getHeaders(): Promise<HeadersInit> {
     const headers: HeadersInit = {
@@ -18,9 +27,9 @@ class Api {
       'Accept': 'application/json',
     };
 
-    const token = AuthService.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    // Add token to Authorization header if available
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     return headers;
@@ -39,7 +48,7 @@ class Api {
       // Handle specific error cases
       switch (response.status) {
         case 401:
-          AuthService.logout();
+          this.clearToken(); // Clear token on authentication failure
           error.message = 'Your session has expired. Please log in again.';
           break;
         case 403:
@@ -62,7 +71,12 @@ class Api {
     }
 
     try {
-      return await response.json();
+      const data = await response.json();
+      // If response includes a new token, update it
+      if (data.token) {
+        this.setToken(data.token);
+      }
+      return data;
     } catch (error) {
       throw new Error('Invalid JSON response from server');
     }
@@ -80,15 +94,35 @@ class Api {
       const response = await fetch(input, {
         ...options,
         signal: controller.signal,
+        credentials: 'include', // Always include credentials for cookie support
+        mode: 'cors', // Enable CORS
+        headers: {
+          ...options.headers,
+          'Origin': window.location.origin,
+        }
       });
       clearTimeout(timeoutId);
+      
+      // Log response details for debugging
+      console.log('API Response:', {
+        url: input,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
+      console.error('API Request failed:', {
+        url: input,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Request timed out. Please try again.');
       }
-      throw error;
+      throw new Error('Network request failed. Please check your connection.');
     }
   }
 
@@ -96,7 +130,6 @@ class Api {
     const response = await this.fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
       method: 'GET',
       headers: await this.getHeaders(),
-      credentials: 'include',
       timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);
@@ -111,7 +144,6 @@ class Api {
       method: 'POST',
       headers: await this.getHeaders(),
       body: data ? JSON.stringify(data) : undefined,
-      credentials: 'include',
       timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);
@@ -126,7 +158,6 @@ class Api {
       method: 'PATCH',
       headers: await this.getHeaders(),
       body: JSON.stringify(data),
-      credentials: 'include',
       timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);
@@ -136,7 +167,6 @@ class Api {
     const response = await this.fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
       headers: await this.getHeaders(),
-      credentials: 'include',
       timeout: options?.timeout,
     });
     return this.handleResponse<T>(response);

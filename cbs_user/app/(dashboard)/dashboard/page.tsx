@@ -16,15 +16,26 @@ import FloatingNav from "@/components/ui/floating-navbar";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import { api } from '@/lib/utils/api';
+import { toast } from 'sonner';
+import { Loader2, ExternalLink, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // Zod schema for Booking
 const BookingSchema = z.object({
-  id: z.number(),
+  id: z.string(),
+  userId: z.string(),
   date: z.string(),
-  time: z.string(),
-  type: z.string(),
-  status: z.enum(["Completed", "Upcoming", "Cancelled"]),
-  link: z.string().optional()
+  status: z.string(),
+  paymentStatus: z.string(),
+  paymentId: z.string(),
+  meetlink: z.string().nullable(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  user: z.object({
+    name: z.string(),
+    email: z.string()
+  }).optional()
 });
 
 // Type inference from the schema
@@ -64,147 +75,158 @@ const navItems = [
 
 const ITEMS_PER_PAGE = 10;
 
-// Mock data for development - validate with Zod schema
-const mockBookings = [
-  {
-    id: 1,
-    date: "2024-03-20",
-    time: "10:00 AM",
-    type: "General Consultation",
-    status: "Upcoming",
-    link: "https://meet.zoho.com/ABC123xyz"
-  },
-  {
-    id: 2,
-    date: "2024-03-19",
-    time: "2:30 PM",
-    type: "Follow-up",
-    status: "Completed",
-    link: "https://meet.zoho.com/DEF456uvw"
-  },
-  {
-    id: 3,
-    date: "2024-03-18",
-    time: "11:00 AM",
-    type: "Emergency",
-    status: "Cancelled",
-    link: "https://meet.zoho.com/GHI789rst"
-  },
-  {
-    id: 4,
-    date: "2024-03-17",
-    time: "9:00 AM",
-    type: "Follow-up",
-    status: "Upcoming",
-    link: "https://meet.zoho.com/JKL012mno"
-  },
-  {
-    id: 5,
-    date: "2024-03-16",
-    time: "10:00 AM",
-    type: "General Consultation",
-    status: "Upcoming",
-    link: "https://meet.zoho.com/MNO345pqr"
-  },
-  {
-    id: 6,
-    date: "2024-03-15",
-    time: "11:00 AM",
-    type: "Emergency",
-    status: "Cancelled",
-    link: "https://meet.zoho.com/PQR678stu"
-  }
-] as const;
-
-// Validate mock data
-const validatedMockBookings = mockBookings.map(booking => BookingSchema.parse(booking));
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortField, setSortField] = useState<"date" | "type">("date");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isAscending, setIsAscending] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState<"bookedAt" | "amount">("bookedAt");
+  const [isAscending, setIsAscending] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Validate data before setting state
-        const validatedBookings = validatedMockBookings;
-        setBookings(validatedBookings);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load bookings");
-        console.error("Error loading bookings:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchBookings();
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchBookings, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Filter and sort bookings
-  const filteredAndSortedBookings = React.useMemo(() => {
-    return bookings
-      .filter((booking: Booking) => 
-        (statusFilter === "all" || booking.status === statusFilter) &&
-        (booking.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         booking.date.includes(searchTerm))
-      )
-      .sort((a: Booking, b: Booking) => {
-        if (sortField === "date") {
-          return isAscending 
-            ? new Date(a.date).getTime() - new Date(b.date).getTime()
-            : new Date(b.date).getTime() - new Date(a.date).getTime();
+  const fetchBookings = async () => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      
+      if (!user) {
+        setError('Please log in to view your bookings');
+        return;
+      }
+
+      const endpoint = user.role === 'admin' ? '/admin/bookings' : '/bookings/my';
+      console.log('User role:', user.role);
+      console.log('Fetching bookings from:', endpoint);
+      
+      const response = await api.get(endpoint);
+      console.log('Raw API response:', response);
+      
+      // Handle the response based on its structure
+      let bookingsData: Booking[] = [];
+      
+      if (response) {
+        if (Array.isArray(response)) {
+          bookingsData = response;
+        } else if (typeof response === 'object') {
+          if (Array.isArray((response as any).bookings)) {
+            bookingsData = (response as any).bookings;
+          } else if (Array.isArray((response as any).data)) {
+            bookingsData = (response as any).data;
+          } else if (Array.isArray((response as any).data?.bookings)) {
+            bookingsData = (response as any).data.bookings;
+          }
         }
-        return isAscending
-          ? a.type.localeCompare(b.type)
-          : b.type.localeCompare(a.type);
-      });
-  }, [bookings, statusFilter, searchTerm, sortField, isAscending]);
+      }
+
+      console.log('Processed bookings data:', bookingsData);
+      setBookings(bookingsData);
+      console.log('Bookings state after update:', bookingsData);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      const message = error instanceof Error ? error.message : 'Failed to fetch bookings';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const endpoint = user?.role === 'admin' ? `/admin/bookings/${id}` : `/bookings/${id}`;
+      await api.delete(endpoint);
+      toast.success('Booking deleted successfully');
+      fetchBookings();
+    } catch (error) {
+      toast.error('Failed to delete booking');
+    }
+  };
+
+  const handleStatusChange = async (id: string, newStatus: "Cancelled") => {
+    try {
+      const endpoint = user?.role === 'admin' ? `/admin/bookings/${id}` : `/bookings/${id}`;
+      await api.patch(endpoint, { status: newStatus });
+      toast.success('Booking status updated');
+      fetchBookings();
+    } catch (error) {
+      toast.error('Failed to update booking status');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return 'text-green-500 bg-green-50 dark:bg-green-900/20';
+      case 'cancelled':
+        return 'text-red-500 bg-red-50 dark:bg-red-900/20';
+      case 'pending':
+        return 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20';
+      default:
+        return 'text-gray-500 bg-gray-50 dark:bg-gray-900/20';
+    }
+  };
+
+  const filteredBookings = bookings
+    .filter((booking: Booking) => {
+      console.log('Filtering booking:', booking);
+      return (statusFilter === "all" || booking.status === statusFilter) &&
+        ((booking.paymentId && booking.paymentId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (booking.date && booking.date.includes(searchTerm)));
+    })
+    .sort((a: Booking, b: Booking) => {
+      if (sortField === "bookedAt") {
+        return isAscending 
+          ? new Date(a.date).getTime() - new Date(b.date).getTime()
+          : new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      return isAscending
+        ? 0  // Remove amount sorting since it's not in our data structure
+        : 0;
+    });
+
+  console.log('Filtered bookings:', filteredBookings);
 
   // Pagination
-  const totalPages = Math.ceil(filteredAndSortedBookings.length / ITEMS_PER_PAGE);
-  const paginatedBookings = filteredAndSortedBookings.slice(
+  const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE);
+  const paginatedBookings = filteredBookings.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Handlers
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this booking?")) {
-      setBookings((prev: Booking[]) => prev.filter(booking => booking.id !== id));
-    }
-  };
+  console.log('Total pages:', totalPages);
+  console.log('Current page:', currentPage);
 
-  const handleStatusChange = async (id: number, newStatus: "Cancelled") => {
-    setBookings((prev: Booking[]) => 
-      prev.map(booking => 
-        booking.id === id ? { ...booking, status: newStatus } : booking
-      )
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
     );
-  };
+  }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Completed":
-        return "bg-green-100 text-green-800";
-      case "Upcoming":
-        return "bg-blue-100 text-blue-800";
-      case "Cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Error Loading Bookings</h3>
+          <p className="text-gray-600 dark:text-gray-400">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -257,90 +279,98 @@ export default function Dashboard() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-gray-200 dark:border-gray-800">
-                    <TableHead className="text-gray-600 dark:text-gray-400">Date</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Time</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Type</TableHead>
+                    {user?.role === 'admin' && (
+                      <TableHead className="text-gray-600 dark:text-gray-400">User</TableHead>
+                    )}
+                    <TableHead className="text-gray-600 dark:text-gray-400">Booking ID</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Payment Status</TableHead>
                     <TableHead className="text-gray-600 dark:text-gray-400">Status</TableHead>
-                    <TableHead className="text-gray-600 dark:text-gray-400">Link</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Booked At</TableHead>
+                    <TableHead className="text-gray-600 dark:text-gray-400">Meeting</TableHead>
                     <TableHead className="text-right text-gray-600 dark:text-gray-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading ? (
-                    // Loading skeletons
-                    Array.from({ length: 5 }).map((_, index) => (
-                      <TableRow key={index} className="border-gray-200 dark:border-gray-800">
-                        {Array.from({ length: 6 }).map((_, cellIndex) => (
-                          <TableCell key={cellIndex}>
-                            <Skeleton className="h-6 w-full dark:bg-gray-800" />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
+                  {bookings.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center">
+                        <p className="text-gray-600 dark:text-gray-400">No bookings found.</p>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     paginatedBookings.map((booking) => (
-                      <TableRow key={booking.id} className="border-gray-200 dark:border-gray-800">
-                        <TableCell className="text-gray-900 dark:text-gray-100">{booking.date}</TableCell>
-                        <TableCell className="text-gray-900 dark:text-gray-100">{booking.time}</TableCell>
-                        <TableCell className="text-gray-900 dark:text-gray-100">{booking.type}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(booking.status)}>
-                            {booking.status}
-                          </Badge>
+                      <motion.tr
+                        key={booking.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                      >
+                        {user?.role === 'admin' && (
+                          <TableCell className="py-3 px-4">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">{booking.user?.name}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{booking.user?.email}</p>
+                            </div>
+                          </TableCell>
+                        )}
+                        <TableCell className="py-3 px-4 font-medium text-gray-900 dark:text-white">
+                          {booking.paymentId}
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-gray-900 dark:text-white">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.paymentStatus)}`}>
+                            {booking.paymentStatus}
+                          </span>
                         </TableCell>
                         <TableCell>
-                          {booking.status === "Upcoming" ? (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-gray-900 dark:text-white">
+                          {new Date(booking.date).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="py-3 px-4">
+                          {booking.meetlink && (
                             <Button
-                              asChild
-                              variant="link"
-                              className="text-[#007BFF] dark:text-[#60A5FA] hover:text-[#0056b3] dark:hover:text-[#3B82F6] p-0 h-auto font-normal"
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 dark:text-blue-400"
+                              onClick={() => {
+                                const url = booking.meetlink;
+                                if (url) window.open(url, '_blank');
+                              }}
                             >
-                              <Link 
-                                href={booking.link || "#"}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1"
-                              >
-                                Join Meeting
-                                <svg
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                  />
-                                </svg>
-                              </Link>
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Join
                             </Button>
-                          ) : (
-                            <span className="text-gray-500 dark:text-gray-400">
-                              {booking.status === "Completed" ? "Meeting Ended" : "Not Available"}
-                            </span>
+                          )}
+                          {!booking.meetlink && (
+                            <span className="text-gray-500 dark:text-gray-400">N/A</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-                                Actions
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-                              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">View Details</DropdownMenuItem>
-                              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Reschedule</DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <TableCell className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            {booking.status !== 'Cancelled' && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleStatusChange(booking.id, 'Cancelled')}
+                              >
                                 Cancel
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                              </Button>
+                            )}
+                            {user?.role === 'admin' && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(booking.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
-                      </TableRow>
+                      </motion.tr>
                     ))
                   )}
                 </TableBody>
@@ -349,7 +379,7 @@ export default function Dashboard() {
               {/* Pagination */}
               <div className="flex justify-between items-center mt-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedBookings.length)} of {filteredAndSortedBookings.length} results
+                  Showing {currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredBookings.length)} of {filteredBookings.length} results
                 </p>
                 <div className="flex gap-2">
                   <Button
